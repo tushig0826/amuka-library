@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amuka's Library</title>
+  <style>
+    body {
+      font-family: "Comic Sans MS", cursive, sans-serif;
+      background: #e6f7ff;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      overflow-x: hidden;
+    }
+    header {
+      background: #a6d8ff;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.8rem;
+      border-bottom: 4px solid #7ec8f8;
+      position: relative;
+      z-index: 10;
+    }
+    .container {
+      max-width: 900px;
+      margin: 1rem auto;
+      padding: 1rem;
+      position: relative;
+      z-index: 10;
+    }
+    form {
+      background: #d9f0ff;
+      padding: 1rem;
+      border-radius: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+    input, button {
+      padding: 0.6rem;
+      border: none;
+      border-radius: 10px;
+      margin: 0.3rem 0;
+      width: 100%;
+      font-size: 1rem;
+    }
+    button {
+      background: #6ec1f5;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.3s;
+    }
+    button:hover {
+      background: #4fa9e3;
+      transform: scale(1.05);
+    }
+    .book-list, .search-results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .book, .search-card {
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      padding: 0.8rem;
+      text-align: center;
+      position: relative;
+      transition: transform 0.3s ease-in-out;
+    }
+    .book:hover, .search-card:hover {
+      transform: translateY(-5px);
+    }
+    .book img, .search-card img {
+      max-width: 100%;
+      border-radius: 10px;
+    }
+    .book h3, .search-card h3 {
+      margin: 0.5rem 0;
+      font-size: 1.1rem;
+      color: #4fa9e3;
+    }
+    .book p, .search-card p {
+      margin: 0.2rem 0;
+      font-size: 0.9rem;
+    }
+    .remove-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #4fa9e3;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      line-height: 25px;
+    }
+    #manualForm {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #f0faff;
+      border-radius: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    /* Floating cute animations */
+    .floating {
+      position: fixed;
+      bottom: -100px;
+      width: 60px;
+      opacity: 0.7;
+      animation: floatUp 15s infinite linear;
+      z-index: 1;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+      50% { opacity: 1; }
+      100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>📚 Amuka's Library</header>
+
+  <!-- Floating decorative images -->
+  <img src="https://img.icons8.com/color/96/000000/book.png" class="floating" style="left:10%; animation-delay:0s;">
+  <img src="https://img.icons8.com/color/96/000000/balloon.png" class="floating" style="left:30%; animation-delay:3s;">
+  <img src="https://img.icons8.com/color/96/000000/open-book--v2.png" class="floating" style="left:60%; animation-delay:6s;">
+  <img src="https://img.icons8.com/color/96/000000/balloon.png" class="floating" style="left:80%; animation-delay:9s;">
+
+  <div class="container">
+    <form id="bookForm">
+      <h2>Add a Book</h2>
+      <input type="text" id="bookTitle" placeholder="Enter book title..." required>
+      <button type="submit">Search</button>
+    </form>
+
+    <div id="searchResults" class="search-results"></div>
+
+    <div id="manualForm" style="display:none;">
+      <h2>Manual Entry</h2>
+      <input type="text" id="manualTitle" placeholder="Book Title">
+      <input type="text" id="manualAuthor" placeholder="Author">
+      <input type="text" id="manualDate" placeholder="Published Date">
+      <input type="text" id="manualPlace" placeholder="Publishing Place">
+      <input type="text" id="manualCover" placeholder="Cover Image URL">
+      <button onclick="saveManualBook()">Save Book</button>
+    </div>
+
+    <h2>📖 My Books</h2>
+    <div class="book-list" id="bookList"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("bookForm");
+    const bookList = document.getElementById("bookList");
+    const searchResults = document.getElementById("searchResults");
+    const manualForm = document.getElementById("manualForm");
+
+    let books = JSON.parse(localStorage.getItem("books")) || [];
+
+    function displayBooks() {
+      bookList.innerHTML = "";
+      books.forEach((book, index) => {
+        const div = document.createElement("div");
+        div.className = "book";
+        div.innerHTML = `
+          <button class="remove-btn" onclick="removeBook(${index})">×</button>
+          <img src="${book.cover || 'https://via.placeholder.com/150'}" alt="Book Cover">
+          <h3>${book.title}</h3>
+          <p><b>Author:</b> ${book.author || "Unknown"}</p>
+          <p><b>Date:</b> ${book.date || "Unknown"}</p>
+          <p><b>Place:</b> ${book.place || "Unknown"}</p>
+        `;
+        bookList.appendChild(div);
+      });
+    }
+
+    async function fetchBook(title) {
+      searchResults.innerHTML = "<p>🔍 Searching...</p>";
+      try {
+        const res = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(title)}`);
+        const data = await res.json();
+        searchResults.innerHTML = "";
+        if (data.docs && data.docs.length > 0) {
+          data.docs.slice(0, 6).forEach(bookData => {
+            const book = {
+              title: bookData.title,
+              author: bookData.author_name ? bookData.author_name[0] : "Unknown",
+              date: bookData.first_publish_year || "Unknown",
+              place: bookData.publish_place ? bookData.publish_place[0] : "Unknown",
+              cover: bookData.cover_i ? `https://covers.openlibrary.org/b/id/${bookData.cover_i}-M.jpg` : null
+            };
+            const card = document.createElement("div");
+            card.className = "search-card";
+            card.innerHTML = `
+              <img src="${book.cover || 'https://via.placeholder.com/150'}" alt="Book Cover">
+              <h3>${book.title}</h3>
+              <p><b>Author:</b> ${book.author}</p>
+              <p><b>Date:</b> ${book.date}</p>
+              <button onclick='addBook(${JSON.stringify(JSON.stringify(book))})'>Add</button>
+            `;
+            searchResults.appendChild(card);
+          });
+        } else {
+          searchResults.innerHTML = "<p>No results found. Please add manually.</p>";
+          manualForm.style.display = "block";
+          document.getElementById("manualTitle").value = title;
+        }
+      } catch (error) {
+        searchResults.innerHTML = "<p>Error fetching book. Please add manually.</p>";
+        manualForm.style.display = "block";
+        document.getElementById("manualTitle").value = title;
+      }
+    }
+
+    function addBook(bookJSON) {
+      const book = JSON.parse(bookJSON);
+      books.push(book);
+      localStorage.setItem("books", JSON.stringify(books));
+      displayBooks();
+      searchResults.innerHTML = "";
+    }
+
+    function saveManualBook() {
+      const book = {
+        title: document.getElementById("manualTitle").value,
+        author: document.getElementById("manualAuthor").value,
+        date: document.getElementById("manualDate").value,
+        place: document.getElementById("manualPlace").value,
+        cover: document.getElementById("manualCover").value
+      };
+      books.push(book);
+      localStorage.setItem("books", JSON.stringify(books));
+      displayBooks();
+      manualForm.style.display = "none";
+    }
+
+    function removeBook(index) {
+      if (confirm("Remove this book?")) {
+        books.splice(index, 1);
+        localStorage.setItem("books", JSON.stringify(books));
+        displayBooks();
+      }
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const title = document.getElementById("bookTitle").value;
+      fetchBook(title);
+      form.reset();
+    });
+
+    // initial display
+    displayBooks();
+  </script>
+</body>
+</html>
